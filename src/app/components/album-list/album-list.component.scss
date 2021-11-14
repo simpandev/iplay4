@@ -1,0 +1,20 @@
+.album-list {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+}
+
+.album-list__scroll-viewport {
+    position: relative;
+    flex-grow: 1;
+    width: 100%;
+}
+
+.selected {
+    background-color: var(--accent-darker-color);
+}
+
+a.mat-list-item:hover {
+    background-color: var(--accent-color);
+}

@@ -1,0 +1,18 @@
+<div>
+    <youtube-player 
+        #youtube_player
+        videoId="{{videoId}}"
+        *ngIf="videoId != null"
+        [width]="400" 
+        [height]="300"
+        [playerVars]="{'autoplay': 1, 'disablekb': 1}"
+        >
+    </youtube-player>
+
+    <div 
+        class="player-placeholder"
+        *ngIf="videoId == null"
+    >
+        PLAYER
+    </div>
+</div>

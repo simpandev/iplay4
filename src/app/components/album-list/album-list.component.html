@@ -1,0 +1,11 @@
+<mat-nav-list class="album-list">
+  <cdk-virtual-scroll-viewport [itemSize]="10" class="album-list__scroll-viewport">
+    <a mat-list-item 
+      *cdkVirtualFor="let album of playlistSummary.playlists; let ndx = index; templateCacheSize: 10"
+      (click)="onClick(ndx)"
+      [ngClass]="{'selected': ndx === selectedIndex}"
+    >
+    {{ album.name }}
+  </a>
+  </cdk-virtual-scroll-viewport>
+</mat-nav-list>

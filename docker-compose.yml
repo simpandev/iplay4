@@ -1,0 +1,13 @@
+version: "3.9"
+services:
+  iplay4:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: iplay4
+    restart: always
+    volumes:
+      - "${IPLAY4_PLAYLISTS}:/opt/iplay4/playlists"
+      - "${IPLAY4_ARCH}:/media/arch"
+    ports:
+      - "8999:8000"

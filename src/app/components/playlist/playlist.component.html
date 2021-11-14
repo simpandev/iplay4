@@ -1,0 +1,37 @@
+<mat-table #playlistView [dataSource]="dataSource" recycleRows="true">
+
+  <ng-container matColumnDef="title">
+    <mat-header-cell *matHeaderCellDef>Title</mat-header-cell>
+    <mat-cell *matCellDef="let row"> {{row.title}} </mat-cell>
+  </ng-container>
+  
+  <ng-container matColumnDef="author">
+    <mat-header-cell *matHeaderCellDef>Author</mat-header-cell>
+    <mat-cell *matCellDef="let row"> {{row.author}} </mat-cell>
+  </ng-container>
+  
+  <ng-container matColumnDef="duration">
+    <mat-header-cell *matHeaderCellDef>Duration</mat-header-cell>
+    <mat-cell *matCellDef="let row"> {{row.duration}} </mat-cell>
+  </ng-container>
+
+  <ng-container matColumnDef="video_id">
+    <mat-header-cell *matHeaderCellDef>YouTube</mat-header-cell>
+    <mat-cell *matCellDef="let row">
+        <a href="https://www.youtube.com/watch?v={{row.video_id}}">
+            <img src="/assets/img/youtube_social_icon_red.png" class="yt-icon" alt="Youtube icon" />
+        </a>
+    </mat-cell>
+  </ng-container>
+  
+  <mat-header-row *matHeaderRowDef="displayedColumns; sticky: true"></mat-header-row>
+  <mat-row 
+    #playlistRowView
+    tabindex=0
+    *matRowDef="let row; columns: displayedColumns; let ndx = index" 
+    [ngClass]="{'selected': ndx === selectedIndex, 'playing': ndx === playingIndex}"
+    [attr.index]="ndx"
+    (click)="select(ndx)"
+    (dblclick)="playSelected()"
+    ></mat-row>
+</mat-table>
