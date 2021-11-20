@@ -29,6 +29,7 @@
 
 .mat-row:hover .mat-cell {
   background-color: var(--accent-color);
+  color: var(--text-accent-color);
 }
 
 .yt-icon {
@@ -38,8 +39,10 @@
 
 .selected .mat-cell {
   background-color: var(--accent-darker-color);
+  color: var(--text-accent-darker-color);
 }
 
 .playing .mat-cell {
   background-color: var(--accent-lighter-color);
+  color: var(--text-accent-lighter-color);
 }
