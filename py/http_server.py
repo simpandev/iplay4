@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-import argparse
 from collections import namedtuple
 from typing import BinaryIO, Union
 from enum import Enum
@@ -17,18 +16,17 @@ MimeType = namedtuple("MimeType", ["extension", "mime_type"])
 coloredlogs.install(level=logging.INFO)
 log = logging.getLogger()
 
-parser = argparse.ArgumentParser()
-parser.add_argument("-d", "--directory", type=str, default=".", help="directory served by the server")
-parser.add_argument("-p", "--port", type=int, default=8000, help="port on which the server will listen to incoming requests")
-parser.add_argument("-b", "--bind", type=str, default="localhost", help="bind address")
-args = parser.parse_args()
+BASE_PATH: Union[str, None] = os.path.abspath(os.path.dirname(__file__))
 
 
-BASE_PATH = os.path.abspath(args.directory)
-
-
-def get_path(local_path: str) -> str:
-    path = local_path.replace("/", os.sep)
+def get_absolute_filepath(url_path: str) -> str:
+    """
+    Transform a URL path into a filesystem path.
+    
+    :param url_path: URL relative path
+    :returns: the absolute path referring to the resource in the filesystem
+    """
+    path = url_path.replace("/", os.sep)
     resource_path = os.path.join(BASE_PATH, path)
     if resource_path.endswith(os.sep):
         resource_path = resource_path[:-1]
@@ -53,7 +51,7 @@ class MimeTypeEnum(Enum):
 class AngularServer(BaseHTTPRequestHandler):
 
     def do_GET(self):
-        local_path = get_path(self.path[1:])
+        local_path = get_absolute_filepath(self.path[1:])
         if self.path.startswith("/playlists"):
             if os.path.exists(local_path):
                 self.__playlist(local_path)
@@ -100,6 +98,15 @@ class AngularServer(BaseHTTPRequestHandler):
 
 
 if __name__ == "__main__":
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-d", "--directory", type=str, default=".", help="Specify alternative directory [default:current directory]")
+    parser.add_argument("-p", "--port", type=int, default=8000, help="Specify alternate port [default: 8000]")
+    parser.add_argument("-b", "--bind", type=str, default="localhost", help="Specify alternate bind address [default: localhost]")
+    args = parser.parse_args()
+
+    BASE_PATH = os.path.abspath(args.directory)
+
     webServer = HTTPServer((args.bind, args.port), AngularServer)
     log.info("server binded to address %s", args.bind)
     log.info("server listening on port %d", args.port)
