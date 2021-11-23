@@ -8,6 +8,6 @@ services:
     restart: always
     volumes:
       - "${IPLAY4_PLAYLISTS}:/opt/iplay4/playlists"
-      - "${IPLAY4_ARCH}:/media/arch"
+      - "${IPLAY4_ARCHIVE}:/media/arch"
     ports:
       - "8999:8000"
