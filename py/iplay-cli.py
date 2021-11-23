@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-import argparse
+from dataclasses import dataclass, asdict
 import json
 import logging
-from typing import Any, Dict, List
+from typing import List
 import os
 
 import coloredlogs
@@ -10,61 +10,75 @@ import coloredlogs
 __author__ = "Simone Pandolfi <simopandolfi@gmail.com>"
 __version__ = (1, 0, 0, "salamandra")
 
-parser = argparse.ArgumentParser()
-parser.add_argument("-i", "--input", type=str, default=".", help="input directory")
-parser.add_argument("-v", "--verbose", action="store_true", help="verbose output")
-parser.add_argument("-vv", "--very-verbose", action="store_true", help="very verbose output")
-requiredNamed = parser.add_argument_group('required arguments')
-requiredNamed.add_argument("-o", "--output", type=str, help="output directory", required=True)
-args = parser.parse_args()
-
-log_level = logging.INFO if args.verbose or args.very_verbose else logging.FATAL
-log_format = "%(asctime)s [%(process)d] %(levelname)s %(message)s" if args.very_verbose else "%(message)s"
+log_level = logging.INFO
+log_format = "%(asctime)s [%(process)d] %(levelname)s %(message)s"
 coloredlogs.install(level=log_level, fmt=log_format)
 log = logging.getLogger()
 
 
+@dataclass
+class PlaylistEntry:
+    name: str
+    id: str
+
+
+@dataclass
+class PlaylistIndex:
+    favorite: str
+    playlists: List[PlaylistEntry]
+
+
+@dataclass
+class VideoEntry:
+    title: str
+    author: str
+    duration: str
+    video_id: str
+
+
 def get_playlist_id(playlist_name: str) -> str:
-    return playlist_name.lower().replace(" ", "-")
+    name = playlist_name[1:] if playlist_name.startswith("_") else playlist_name
+    return name.lower().replace(" ", "-")
 
 
-def build_playlist_index(input_dir: str) -> Dict[str, Any]:
+def build_playlist_index(input_dir: str) -> PlaylistIndex:
+
+    def search_favorite_playlist(playlists_names: List[str]) -> str:
+        if not any(playlists_names):
+            return ""
+        favorite_list = [playlist_name for playlist_name in playlists_names if playlist_name.startswith("_")]
+        if any(favorite_list):
+            log.info("found a favorite playlist: %s", favorite_list[0])
+            return get_playlist_id(favorite_list[0])
+        log.info("a favorite playlist was not found, the first one in alphabetical order is chosen: %s", playlists_names[0])
+        return get_playlist_id(playlists_names[0])
+
+    def build_playlist_entries(playlists_names: List[str]) -> List[PlaylistEntry]:
+        return [PlaylistEntry(name=playlist_name, id=get_playlist_id(playlist_name)) for playlist_name in playlists_names]
+
     log.info("building playlist index...")
-    playlist_index = {
-        "favorite": "",
-        "playlists": [],
-    }
-    playlists_dirs = [filename for filename in os.listdir(input_dir) if os.path.isdir(os.path.join(input_dir, filename))]
-    log.info("found %d playlists folders", len(playlists_dirs))
-    for filename in playlists_dirs:
-        log.info("processing: %s", filename)
-        playlist_id = get_playlist_id(filename)
-        # the underscore ("_") character as first one of the playlist name indicates the favorite playlist
-        if filename.startswith("_"):
-            filename = filename[1:]
-            playlist_id = get_playlist_id(filename)
-            playlist_index["favorite"] = playlist_id
-            log.info("found favorite playlist: %s", filename)
-        playlist_index["playlists"].append({
-            "name": filename,
-            "id": playlist_id,
-            "url": f'/playlists/{playlist_id}',
-        })
-    playlist_index["playlists"] = sorted(playlist_index["playlists"], key=lambda pl: pl["name"])
+    playlists_names: List[str] = [filename for filename in os.listdir(input_dir) if os.path.isdir(os.path.join(input_dir, filename))]
+    playlists_names.sort()
+    log.info("found %d playlists folders", len(playlists_names))
+    playlist_index: PlaylistIndex = PlaylistIndex(
+        favorite=search_favorite_playlist(playlists_names),
+        playlists=build_playlist_entries(playlists_names)
+    )
     log.info("playlist index successfully built")
     return playlist_index
 
 
-def build_playlist(input_dir: str, playlist_name: str) -> List[Dict[str, str]]:
-    videos = []
+def build_playlist(input_dir: str, playlist_name: str) -> List[VideoEntry]:
     playlist_path = os.path.join(input_dir, playlist_name)
     files = os.listdir(playlist_path)
     files.sort()
+    videos: List[VideoEntry] = []
     for filename in files:
         filepath = os.path.join(playlist_path, filename)
         if filename.endswith(".json") and not os.path.isdir(filepath):
             with open(filepath, "r") as fp:
-                videos.append(json.load(fp))
+                video: VideoEntry = VideoEntry(**json.load(fp))
+                videos.append(video)
     return videos
 
 
@@ -72,8 +86,8 @@ def build(input_dir: str, output_dir: str) -> None:
     # first build the index file
     playlistindexpath = os.path.join(output_dir, "index")
     with open(playlistindexpath, "w") as fp:
-        playlist_index = build_playlist_index(input_dir)
-        json.dump(playlist_index, fp)
+        playlist_index: PlaylistIndex = build_playlist_index(input_dir)
+        json.dump(asdict(playlist_index), fp)
     log.info("playlist index saved in %s", os.path.abspath(playlistindexpath))
     # then the playlists files
     for filename in os.listdir(input_dir):
@@ -82,14 +96,21 @@ def build(input_dir: str, output_dir: str) -> None:
             # if the playlist is the favorite one deletes the "_" prefix by the playlist name
             playlistname = filename[1:] if filename.startswith("_") else filename
             log.info("building playlist %s", playlistname)
-            playlistpath = os.path.join(args.output, get_playlist_id(playlistname))
+            playlistpath = os.path.join(output_dir, get_playlist_id(playlistname))
+            playlist = list(map(asdict, build_playlist(input_dir, filename)))
             with open(playlistpath, "w") as fp:
-                playlist = build_playlist(input_dir, filename)
                 json.dump(playlist, fp)
             log.info("playlist %s saved in %s", playlistname, os.path.abspath(playlistpath))
 
 
 if __name__ == '__main__':
+    import argparse
+    parser = argparse.ArgumentParser(description="IPlay4 CLI")
+    parser.add_argument("-i", "--input", type=str, default=".", help="input directory")
+    requiredNamed = parser.add_argument_group('required arguments')
+    requiredNamed.add_argument("-o", "--output", type=str, help="output directory", required=True)
+    args = parser.parse_args()
+
     log.info("start processing playlists")
     try:
         build(args.input, args.output)

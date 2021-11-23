@@ -1,9 +1,9 @@
 FROM python:3.9-alpine
 WORKDIR /opt/iplay4
-ENV IPLAY4_DIR=/opt/iplay4
+RUN mkdir playlists
+ENV IPLAY4_DIR=/opt/iplay4/playlists
 ENV IPLAY4_ARCH_DIR=/media/arch
 COPY dist/iplay4* ./
-RUN mkdir playlists
 RUN mkdir -p /media/arch
 COPY py/iplay-cli.py /usr/bin
 RUN chmod u+x /usr/bin/iplay-cli.py
