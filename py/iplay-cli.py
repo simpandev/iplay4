@@ -41,6 +41,10 @@ def get_playlist_id(playlist_name: str) -> str:
     return name.lower().replace(" ", "-")
 
 
+def get_playlist_name(playlist_name: str) -> str:
+    return playlist_name[1:] if playlist_name.startswith("_") else playlist_name
+
+
 def build_playlist_index(input_dir: str) -> PlaylistIndex:
 
     def search_favorite_playlist(playlists_names: List[str]) -> str:
@@ -54,7 +58,7 @@ def build_playlist_index(input_dir: str) -> PlaylistIndex:
         return get_playlist_id(playlists_names[0])
 
     def build_playlist_entries(playlists_names: List[str]) -> List[PlaylistEntry]:
-        return [PlaylistEntry(name=playlist_name, id=get_playlist_id(playlist_name)) for playlist_name in playlists_names]
+        return [PlaylistEntry(name=get_playlist_name(playlist_name), id=get_playlist_id(playlist_name)) for playlist_name in playlists_names]
 
     log.info("building playlist index...")
     playlists_names: List[str] = [filename for filename in os.listdir(input_dir) if os.path.isdir(os.path.join(input_dir, filename))]
