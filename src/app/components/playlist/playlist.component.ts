@@ -1,4 +1,5 @@
-import { Component, ElementRef, OnDestroy, OnInit, QueryList, ViewChildren } from '@angular/core';
+import { Component, ElementRef, OnDestroy, OnInit, QueryList, ViewChild, ViewChildren } from '@angular/core';
+import { MatSidenavContent } from '@angular/material/sidenav';
 import { MatTableDataSource } from '@angular/material/table';
 import { Subscription } from 'rxjs';
 import { Video } from '../../dto/Video';
@@ -25,10 +26,14 @@ export class PlaylistComponent implements OnInit, OnDestroy {
   @ViewChildren('playlistRowView', { read: ElementRef })
   private playlistRowViews!: QueryList<ElementRef>;
 
+  @ViewChild('playlist_header', { read: ElementRef })
+  private playlistTableHeader!: ElementRef;
+
   constructor(private albumService: AlbumService,
               private routingService: RoutingService,
               private playlistMediatorService: PlaylistMediatorService,
-              private playerMediatorService: PlayerMediatorService) { }
+              private playerMediatorService: PlayerMediatorService,
+              private sideNavContent: MatSidenavContent) { }
 
   ngOnInit(): void {
     this.initCommands();
@@ -40,9 +45,7 @@ export class PlaylistComponent implements OnInit, OnDestroy {
 
   select(rowIndex: number): void {
     this.selectedIndex = rowIndex;
-    const index = rowIndex.toString();
-    const row = this.playlistRowViews.find(r => r.nativeElement.getAttribute('index') === index);    
-    row?.nativeElement.scrollIntoView({ block: 'center' });
+    this.scrollPlaylist(rowIndex);
   }
 
   selectPrev(delta?: number): void {
@@ -135,7 +138,28 @@ export class PlaylistComponent implements OnInit, OnDestroy {
   private onVideoEnded(): void {
     if (this.playingIndex < this.dataSource.data.length) {
       this.playingIndex = (this.playingIndex < 0) ? 0 : this.playingIndex + 1;
+      this.scrollPlaylist(this.playingIndex);
       this.playVideo();
+    }
+  }
+
+  private scrollPlaylist(rowIndex: number): void {
+    const index = rowIndex.toString();
+    const row = this.playlistRowViews.find(r => r.nativeElement.getAttribute('index') === index);
+
+    const scrollFromTop: number = this.sideNavContent.measureScrollOffset("top");
+    const rowHeight: number = row?.nativeElement.getBoundingClientRect().height;
+    const rowTop: number = rowHeight * rowIndex;
+    if (rowTop < scrollFromTop) {
+      this.sideNavContent.scrollTo({top: rowTop});
+      return;
+    }
+    
+    const viewportHeight: number = window.innerHeight;
+    const tableHeaderHeight: number = this.playlistTableHeader?.nativeElement.getBoundingClientRect().height;
+    const rowBottom: number = rowTop + rowHeight + tableHeaderHeight;
+    if (rowBottom > scrollFromTop + viewportHeight) {
+      this.sideNavContent.scrollTo({top: rowBottom - viewportHeight});
     }
   }
 
