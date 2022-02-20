@@ -111,7 +111,6 @@ def start_server(bind: str, port: int, directory: str) -> None:
     log.info("server started!")
 
     signal.signal(signal.SIGTERM, lambda: web_server.shutdown())
-    signal.signal(signal.SIGKILL, lambda: web_server.shutdown())
 
     try:
         web_server.serve_forever()
