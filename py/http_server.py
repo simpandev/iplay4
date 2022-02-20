@@ -1,12 +1,16 @@
 #!/usr/bin/env python3
+import argparse
 from collections import namedtuple
-from typing import BinaryIO, Union
 from enum import Enum
 from http.server import BaseHTTPRequestHandler, HTTPServer
 import logging
 import os
+import signal
+from typing import BinaryIO, Union
 
 import coloredlogs
+
+from command import command
 
 __author__ = "Simone Pandolfi <simopandolfi@gmail.com>"
 __version__ = (1, 0, 0, "prugno")
@@ -97,24 +101,42 @@ class AngularServer(BaseHTTPRequestHandler):
             self.__send(HttpResponseStatusEnum.OK, mime, fp)
 
 
-if __name__ == "__main__":
-    import argparse
-    parser = argparse.ArgumentParser(description="A simple HTTP server to serve an Angular SPA (Single Page Application).")
-    parser.add_argument("-d", "--directory", type=str, default=".", help="Specify alternative directory [default:current directory]")
-    parser.add_argument("-b", "--bind", type=str, default="localhost", help="Specify alternate bind address [default: localhost]")
-    parser.add_argument("port", type=int, default=8000, nargs="?", action="store", help="Specify alternate port [default: 8000]")
-    args = parser.parse_args()
+def start_server(bind: str, port: int, directory: str) -> None:
+    global BASE_PATH
+    BASE_PATH = os.path.abspath(directory)
 
-    BASE_PATH = os.path.abspath(args.directory)
-
-    webServer = HTTPServer((args.bind, args.port), AngularServer)
-    log.info("server binded to address %s", args.bind)
-    log.info("server listening on port %d", args.port)
+    web_server = HTTPServer((bind, port), AngularServer)
+    log.info("server binded to address %s", bind)
+    log.info("server listening on port %d", port)
     log.info("server started!")
+
+    signal.signal(signal.SIGTERM, lambda: web_server.shutdown())
+    signal.signal(signal.SIGKILL, lambda: web_server.shutdown())
+
     try:
-        webServer.serve_forever()
+        web_server.serve_forever()
     except KeyboardInterrupt:
         pass
     finally:
-        webServer.server_close()
+        web_server.shutdown()
         log.info("server stopped.")
+
+
+def load_parser(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument("cmd", type=str, choices=("start",), help="Command")
+    parser.add_argument("-d", "--directory", type=str, default=".", help="Specify alternative directory [default:current directory]")
+    parser.add_argument("-b", "--bind", type=str, default="localhost", help="Specify alternate bind address [default: localhost]")
+    parser.add_argument("port", type=int, default=8000, nargs="?", action="store", help="Specify alternate port [default: 8000]")
+
+
+@command(schema="http", cmd="start")
+def http_start(**kwargs) -> None:
+    start_server(kwargs["bind"], kwargs["port"], kwargs["directory"])
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="A simple HTTP server to serve an Angular SPA (Single Page Application).")
+    load_parser(parser)
+    args = parser.parse_args()
+
+    start_server(args.bind, args.port, args.directory)
