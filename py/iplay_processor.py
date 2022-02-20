@@ -211,8 +211,7 @@ def update_video_entry(archive_dir: Union[str, Path], playlist: str, old_video_i
     if duration is not None:
         video_entry.duration = duration
     video_entry.save(playlist_dir)
-    new_filepath = Path(playlist_dir, video_entry.filename)
-    os.rename(filepath, new_filepath)
+    filepath.unlink()
 
 
 def load_parser(parser: ArgumentParser) -> None:
