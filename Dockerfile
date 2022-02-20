@@ -24,4 +24,4 @@ RUN chmod u+x $IPLAY_BIN/*
 
 COPY dist/iplay4* $WEB/
 
-CMD http_server.py -b 0.0.0.0 -d $WEB
+CMD http_server.py -b 0.0.0.0 -d $WEB start
