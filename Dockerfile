@@ -16,8 +16,10 @@ RUN mkdir -p $ARCHIVE
 COPY py/requirements.txt $IPLAY/
 RUN pip install -r $IPLAY/requirements.txt
 
-COPY py/iplay-cli.py $IPLAY_BIN/
+COPY py/command.py $IPLAY_BIN/
 COPY py/http_server.py $IPLAY_BIN/
+COPY py/iplay_processor.py $IPLAY_BIN/
+COPY py/iplay-cli.py $IPLAY_BIN/
 RUN chmod u+x $IPLAY_BIN/*
 
 COPY dist/iplay4* $WEB/
